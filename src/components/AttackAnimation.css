@@ -1,0 +1,183 @@
+.attack-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.attack-icon {
+    font-size: 150px;
+    filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.5));
+}
+
+.attack-text {
+    position: absolute;
+    bottom: 20%;
+    font-size: 48px;
+    font-weight: 900;
+    color: white;
+    text-transform: uppercase;
+    text-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    letter-spacing: 4px;
+}
+
+/* Point Steal - Lightning Flash */
+.attack-pointSteal {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+}
+
+.attack-pointSteal .attack-icon {
+    animation: strike-lightning 0.5s ease-out;
+}
+
+@keyframes strike-lightning {
+    0% {
+        transform: translateY(-100vh) scale(0.5);
+        opacity: 0;
+    }
+
+    50% {
+        transform: translateY(0) scale(1.5);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 0;
+    }
+}
+
+/* Freeze - Ice Overlay */
+.attack-freeze {
+    box-shadow: inset 0 0 100px #00BFFF;
+    background: rgba(0, 191, 255, 0.1);
+}
+
+.attack-freeze .attack-icon {
+    animation: freeze-pop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes freeze-pop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    60% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 0;
+    }
+}
+
+/* Time Pressure - Red Alarm */
+.attack-timePressure {
+    background: radial-gradient(circle, rgba(255, 69, 0, 0.2) 0%, transparent 70%);
+    animation: alarm-pulse 0.5s infinite;
+}
+
+@keyframes alarm-pulse {
+    0% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.5;
+    }
+}
+
+/* Life Drain - Skull */
+.attack-lifeDrain {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.attack-lifeDrain .attack-icon {
+    animation: skull-laugh 1s ease-in-out;
+}
+
+@keyframes skull-laugh {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.5) rotate(10deg);
+        opacity: 1;
+    }
+
+    70% {
+        transform: scale(1.2) rotate(-10deg);
+    }
+
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+/* Scramble - Tornado */
+.attack-scramble .attack-icon {
+    animation: spin-tornado 1s linear;
+}
+
+@keyframes spin-tornado {
+    0% {
+        transform: rotate(0deg) scale(0);
+        opacity: 0;
+    }
+
+    50% {
+        transform: rotate(360deg) scale(1.5);
+        opacity: 1;
+    }
+
+    100% {
+        transform: rotate(720deg) scale(0);
+        opacity: 0;
+    }
+}
+
+/* Screen Shake Effect */
+body.shake-hard {
+    animation: shake-hard 0.5s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes shake-hard {
+
+    10%,
+    90% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(6px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-8px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(8px, 0, 0);
+    }
+}

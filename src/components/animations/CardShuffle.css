@@ -1,0 +1,152 @@
+.card-shuffle-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    perspective: 1000px;
+}
+
+.shuffle-phase,
+.deal-phase,
+.reveal-phase {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+.card-stack,
+.card-spread {
+    position: relative;
+    height: 200px;
+    width: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card {
+    width: 140px;
+    height: 200px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transform-style: preserve-3d;
+}
+
+.card-back {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 3px solid #0f3460;
+}
+
+.card-front {
+    border: 3px solid;
+}
+
+.card-win {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    border-color: #FFD700;
+}
+
+.card-lose {
+    background: linear-gradient(135deg, #ff0000, #8b0000);
+    border-color: #ff0000;
+}
+
+.card-pattern {
+    font-size: 4rem;
+    opacity: 0.3;
+}
+
+.card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.card-symbol {
+    font-size: 5rem;
+}
+
+.card-label {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.card-stack .card {
+    position: absolute;
+}
+
+.card-spread .card {
+    position: absolute;
+}
+
+.phase-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    animation: pulse-text 1s ease-in-out infinite;
+}
+
+.result-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+}
+
+.result-message {
+    font-size: 3rem;
+    font-weight: 900;
+    text-align: center;
+    padding: 2rem;
+    border-radius: 20px;
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.win-message {
+    color: #FFD700;
+    background: rgba(0, 0, 0, 0.8);
+    border: 3px solid #FFD700;
+    animation: jackpot-glow 0.5s ease-in-out infinite;
+}
+
+.lose-message {
+    color: #ff0000;
+    background: rgba(0, 0, 0, 0.9);
+    border: 3px solid #ff0000;
+    box-shadow: 0 0 40px rgba(255, 0, 0, 0.5);
+}
+
+@keyframes pulse-text {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes jackpot-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 40px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.8);
+    }
+}

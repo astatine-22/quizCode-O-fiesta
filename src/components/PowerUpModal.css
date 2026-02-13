@@ -1,0 +1,179 @@
+.power-up-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(8px);
+}
+
+.power-up-modal {
+    background: #1a1a2e;
+    border-radius: 20px;
+    padding: 30px;
+    width: 90%;
+    max-width: 500px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-header {
+    margin-bottom: 25px;
+}
+
+.modal-icon {
+    font-size: 60px;
+    margin-bottom: 15px;
+    display: block;
+    animation: float 3s ease-in-out infinite;
+}
+
+.modal-title {
+    font-size: 28px;
+    margin: 0 0 10px;
+    background: linear-gradient(45deg, #fff, #a0a0a0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.modal-description {
+    color: #a0a0a0;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.target-selection {
+    margin: 30px 0;
+    text-align: left;
+}
+
+.target-label {
+    display: block;
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.target-list {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.target-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.target-item:last-child {
+    border-bottom: none;
+}
+
+.target-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.target-item.selected {
+    background: rgba(255, 215, 0, 0.2);
+    border-left: 4px solid #FFD700;
+}
+
+.target-rank {
+    font-weight: bold;
+    width: 30px;
+    color: #FFD700;
+}
+
+.target-name {
+    flex: 1;
+    color: #fff;
+}
+
+.target-score {
+    color: #aaa;
+    font-size: 14px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.btn-cancel,
+.btn-confirm {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.2s;
+}
+
+.btn-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-confirm {
+    background: linear-gradient(45deg, #FF4500, #FFD700);
+    color: #000;
+}
+
+.btn-confirm:hover:not(:disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 69, 0, 0.4);
+}
+
+.btn-confirm:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #444;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Scrollbar styling */
+.target-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.target-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.target-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
