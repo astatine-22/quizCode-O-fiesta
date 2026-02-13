@@ -1,17 +1,29 @@
 import { motion } from 'framer-motion';
+import React, { useEffect } from 'react';
 import { useLeaderboardStore } from '../store/leaderboardStore';
+import { useGameStore } from '../store/gameStore';
 import { useDuelStore } from '../store/duelStore';
 import './Leaderboard.css';
 
 export const Leaderboard: React.FC = () => {
-    const { entries } = useLeaderboardStore();
+    const { entries, adminEntries, loadLeaderboard } = useLeaderboardStore();
+    const { isDemoMode } = useGameStore();
     const { canChallenge, startDuelSelection, selectOpponent } = useDuelStore();
 
-    if (entries.length === 0) {
+    // Ensure leaderboard is loaded on mount
+    useEffect(() => {
+        loadLeaderboard();
+    }, [loadLeaderboard]);
+
+    const displayEntries = isDemoMode ? adminEntries : entries;
+
+    if (displayEntries.length === 0) {
         return (
             <div className="leaderboard-empty">
                 <div className="empty-icon">🏆</div>
-                <div className="empty-text">No scores yet. Be the first!</div>
+                <div className="empty-text">
+                    {isDemoMode ? 'No Admin Scores yet.' : 'No scores yet. Be the first!'}
+                </div>
             </div>
         );
     }
@@ -31,9 +43,11 @@ export const Leaderboard: React.FC = () => {
 
     return (
         <div className="leaderboard">
-            <h3 className="leaderboard-title">🏆 Top Players</h3>
+            <h3 className="leaderboard-title">
+                {isDemoMode ? '⚡ Admin Leaderboard' : '🏆 Top Players'}
+            </h3>
             <div className="leaderboard-list">
-                {entries.map((entry, index) => (
+                {displayEntries.map((entry, index) => (
                     <motion.div
                         key={entry.id}
                         className={`leaderboard-entry ${index < 3 ? 'top-three' : ''}`}
@@ -48,7 +62,7 @@ export const Leaderboard: React.FC = () => {
                                 {entry.score.toLocaleString()} pts • {entry.maxStreak} streak
                             </div>
                         </div>
-                        {canChallenge() && index < 5 && (
+                        {canChallenge() && index < 5 && !isDemoMode && (
                             <button
                                 className="duel-challenge-button"
                                 onClick={(e) => {

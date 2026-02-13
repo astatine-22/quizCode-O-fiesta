@@ -1,4 +1,7 @@
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
+import { useLeaderboardStore } from '../store/leaderboardStore';
+import { useGameStore } from '../store/gameStore';
 import './GameOver.css';
 
 interface GameOverProps {
@@ -15,6 +18,21 @@ export const GameOver: React.FC<GameOverProps> = ({
     correctAnswers
 }) => {
     const accuracy = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+    const { isDemoMode } = useGameStore.getState(); // Get mode directly from store
+    const { addEntry } = useLeaderboardStore();
+
+    useEffect(() => {
+        // Save score to leaderboard
+        // We use a simple check to prevent duplicate entries if component re-renders
+        // Ideally we should have a session ID, but date timestamp in ID helps
+        addEntry({
+            playerName: isDemoMode ? 'Admin' : 'You', // Default name, could be improved with an input
+            score: finalScore,
+            maxStreak,
+            accuracy,
+            date: new Date().toISOString()
+        }, isDemoMode);
+    }, []); // Run once on mount
 
     return (
         <motion.div
