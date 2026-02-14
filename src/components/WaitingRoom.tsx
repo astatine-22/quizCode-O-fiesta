@@ -21,6 +21,11 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({ onGameStart }) => {
 
     const mode = isDemoMode ? 'admin' : 'user';
 
+    // Extract room code from session ID (format: "room_ABC123")
+    const roomCode = gameSessionId?.startsWith('room_')
+        ? gameSessionId.replace('room_', '')
+        : null;
+
     // Listen to opponent team
     useEffect(() => {
         if (gameSessionId) {
@@ -112,6 +117,18 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({ onGameStart }) => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
+                        {roomCode && (
+                            <motion.div
+                                className="waiting-room-code"
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                            >
+                                <div className="room-code-label">Room Code:</div>
+                                <div className="room-code-value">{roomCode}</div>
+                                <div className="room-code-hint">Share this with your opponent!</div>
+                            </motion.div>
+                        )}
+
                         <h1 className="waiting-room-title">⏳ Waiting Room</h1>
 
                         <div className="teams-status">

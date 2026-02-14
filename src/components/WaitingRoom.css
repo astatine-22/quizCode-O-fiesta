@@ -17,6 +17,37 @@
     padding: 40px;
 }
 
+.waiting-room-code {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px 30px;
+    background: rgba(0, 255, 136, 0.1);
+    border: 2px solid #00ff88;
+    border-radius: 15px;
+}
+
+.waiting-room-code .room-code-label {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.waiting-room-code .room-code-value {
+    font-size: 42px;
+    font-weight: 900;
+    color: #00ff88;
+    letter-spacing: 6px;
+    margin-bottom: 8px;
+    font-family: 'Courier New', monospace;
+}
+
+.waiting-room-code .room-code-hint {
+    font-size: 12px;
+    color: #aaa;
+}
+
 .waiting-room-title {
     font-size: 48px;
     font-weight: 900;
