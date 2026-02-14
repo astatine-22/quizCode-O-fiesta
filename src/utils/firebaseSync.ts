@@ -36,8 +36,8 @@ export const getOrCreateActiveSession = async (mode: 'user' | 'admin'): Promise<
  * @param mode 'user' or 'admin'
  * @returns sessionId
  */
-export const createGameSession = async (mode: 'user' | 'admin'): Promise<string> => {
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+export const createGameSession = async (mode: 'user' | 'admin', customSessionId?: string): Promise<string> => {
+    const sessionId = customSessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const sessionRef = ref(database, `games/${mode}/${sessionId}`);
 
     await set(sessionRef, {
