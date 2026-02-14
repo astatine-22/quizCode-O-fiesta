@@ -13,8 +13,13 @@ import { ActiveEffects } from './components/ActiveEffects';
 import { AttackAnimation } from './components/AttackAnimation';
 import { DuelChallenge } from './components/DuelChallenge';
 import { DuelArena } from './components/DuelArena';
+import { TeamSelection } from './components/TeamSelection';
+import { WaitingRoom } from './components/WaitingRoom';
+import { OpponentStatus } from './components/OpponentStatus';
+import { LiveNotifications } from './components/LiveNotifications';
 
 import { useGameStore } from './store/gameStore';
+import { useTeamStore } from './store/teamStore';
 import { useAchievementStore, type Achievement } from './store/achievementStore';
 import { useLeaderboardStore } from './store/leaderboardStore';
 import { usePowerUpStore, type PowerUpType } from './store/powerUpStore';
@@ -55,8 +60,11 @@ function App() {
   const { loadLeaderboard } = useLeaderboardStore();
   const { earnPowerUp, activeEffects, decrementEffectDurations, hasActiveEffect } = usePowerUpStore();
   const { incrementQuestionCounter: incrementDuelCounter } = useDuelStore();
+  const { isTeamMode, myTeam, syncMyTeamData } = useTeamStore();
 
   const [fireIntensity, setFireIntensity] = useState(0);
+  const [showTeamSelection, setShowTeamSelection] = useState(false);
+  const [showWaitingRoom, setShowWaitingRoom] = useState(false);
   const [gameQuestions, setGameQuestions] = useState<Question[]>([]);
   const [currentQuestionPoints, setCurrentQuestionPoints] = useState(100);
   const [unlockedAchievement, setUnlockedAchievement] = useState<Achievement | null>(null);
@@ -134,6 +142,11 @@ function App() {
       // Increment streak and combo (unless frozen)
       incrementStreak();
 
+      // Sync with Firebase in team mode
+      if (isTeamMode && myTeam) {
+        syncMyTeamData({ streak: streak + 1 });
+      }
+
       const isFrozen = hasActiveEffect('freeze');
       if (!isFrozen) {
         incrementCombo();
@@ -175,6 +188,11 @@ function App() {
       setCurrentQuestionPoints(totalPoints);
       addPoints(totalPoints);
 
+      // Sync score with Firebase in team mode
+      if (isTeamMode && myTeam) {
+        syncMyTeamData({ score: score + totalPoints });
+      }
+
       // Add to history
       addToHistory({
         correct: true,
@@ -207,6 +225,11 @@ function App() {
 
       // Consume life
       consumeLife();
+
+      // Sync lives with Firebase in team mode
+      if (isTeamMode && myTeam) {
+        syncMyTeamData({ lives: lives - 1 });
+      }
 
       // Add to history
       addToHistory({
@@ -273,8 +296,39 @@ function App() {
     }, 500);
   };
 
+  const handleTeamSelected = () => {
+    setShowTeamSelection(false);
+    setShowWaitingRoom(true);
+  };
+
+  const handleGameStart = () => {
+    setShowWaitingRoom(false);
+    setGamePhase('playing');
+  };
+
+  const handleEnableTeamMode = () => {
+    setShowTeamSelection(true);
+  };
+
   return (
     <>
+      {/* Team Mode Screens */}
+      {showTeamSelection && (
+        <TeamSelection onTeamSelected={handleTeamSelected} />
+      )}
+
+      {showWaitingRoom && (
+        <WaitingRoom onGameStart={handleGameStart} />
+      )}
+
+      {/* Team Mode UI Elements */}
+      {isTeamMode && gamePhase === 'playing' && (
+        <>
+          <OpponentStatus />
+          <LiveNotifications />
+        </>
+      )}
+
       <ActiveEffects />
 
       <AttackAnimation
@@ -328,6 +382,14 @@ function App() {
               style={useGameStore.getState().isDemoMode ? { background: 'linear-gradient(135deg, #00ff88, #00b8ff)', padding: '1.5rem 2rem' } : {}}
             >
               {useGameStore.getState().isDemoMode ? 'START ADMIN GAME ▶' : 'Start Game'}
+            </button>
+
+            <button
+              className="team-mode-button"
+              onClick={handleEnableTeamMode}
+              style={{ marginTop: '15px', background: 'linear-gradient(135deg, #FFD700, #FF6347)', padding: '1rem 2rem' }}
+            >
+              🏆 TEAM BATTLE MODE 🏆
             </button>
             <div className="game-rules">
               <h3>To Play:</h3>
