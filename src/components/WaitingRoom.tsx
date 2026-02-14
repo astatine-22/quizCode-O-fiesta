@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTeamStore } from '../store/teamStore';
 import { useGameStore } from '../store/gameStore';
-import { checkBothTeamsReady, updateGameStatus } from '../utils/firebaseSync';
+import { updateGameStatus } from '../utils/firebaseSync';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../config/firebase';
 import './WaitingRoom.css';
