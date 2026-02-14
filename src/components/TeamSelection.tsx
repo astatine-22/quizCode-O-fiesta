@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTeamStore, type TeamName } from '../store/teamStore';
 import { useGameStore } from '../store/gameStore';
-import { createGameSession, joinGameSession } from '../utils/firebaseSync';
+import { getOrCreateActiveSession, joinGameSession } from '../utils/firebaseSync';
 import './TeamSelection.css';
 
 interface TeamSelectionProps {
@@ -37,9 +37,9 @@ export const TeamSelection: React.FC<TeamSelectionProps> = ({ onTeamSelected }) 
         setIsJoining(true);
 
         try {
-            // Create or get session ID
+            // Get or create shared session (all teams join the same session)
             const mode = isDemoMode ? 'admin' : 'user';
-            const sessionId = await createGameSession(mode);
+            const sessionId = await getOrCreateActiveSession(mode);
 
             // Join the session
             await joinGameSession(sessionId, selectedTeam, name, mode);

@@ -1,6 +1,35 @@
 import { ref, set, get, update } from 'firebase/database';
 import { database } from '../config/firebase';
-import type { TeamName, TeamData } from '../store/teamStore';
+import type { TeamName } from '../store/teamStore';
+
+/**
+ * Gets the active session or creates a new one
+ * Only one active session per mode at a time
+ * @param mode 'user' or 'admin'
+ * @returns sessionId
+ */
+export const getOrCreateActiveSession = async (mode: 'user' | 'admin'): Promise<string> => {
+    const gamesRef = ref(database, `games/${mode}`);
+    const snapshot = await get(gamesRef);
+    const games = snapshot.val();
+
+    // Find an active session (waiting or playing)
+    if (games) {
+        const activeSessions = Object.entries(games).filter(([_, session]: [string, any]) =>
+            session.status === 'waiting' || session.status === 'playing'
+        );
+
+        // Return the most recent active session
+        if (activeSessions.length > 0) {
+            const [sessionId] = activeSessions[activeSessions.length - 1];
+            console.log(`[Firebase] Found existing ${mode} session: ${sessionId}`);
+            return sessionId;
+        }
+    }
+
+    // No active session found, create a new one
+    return await createGameSession(mode);
+};
 
 /**
  * Creates a new game session in Firebase
