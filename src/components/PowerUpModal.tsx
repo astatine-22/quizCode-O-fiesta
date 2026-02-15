@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { usePowerUpStore, type PowerUpType } from '../store/powerUpStore';
 import { useLeaderboardStore } from '../store/leaderboardStore';
@@ -26,6 +26,13 @@ export const PowerUpModal: React.FC<PowerUpModalProps> = ({ type, onClose }) => 
     const potentialTargets = isTeamMode
         ? [{ id: opponentTeam || 'opponent', playerName: opponentTeam || 'Opponent Team', score: 0 }]
         : entries.slice(0, 5);
+
+    // Auto-select opponent team in team mode
+    useEffect(() => {
+        if (isTeamMode && opponentTeam) {
+            setSelectedTargetId(opponentTeam);
+        }
+    }, [isTeamMode, opponentTeam]);
 
     const handleConfirm = async () => {
         const success = usePowerUp(type, selectedTargetId ?? undefined);
