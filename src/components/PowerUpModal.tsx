@@ -35,49 +35,67 @@ export const PowerUpModal: React.FC<PowerUpModalProps> = ({ type, onClose }) => 
     }, [isTeamMode, opponentTeam]);
 
     const handleConfirm = async () => {
+        console.log('[PowerUpModal] handleConfirm called');
+        console.log('[PowerUpModal] Type:', type);
+        console.log('[PowerUpModal] Selected Target:', selectedTargetId);
+        console.log('[PowerUpModal] Team Mode:', isTeamMode);
+        console.log('[PowerUpModal] My Team:', myTeam);
+        console.log('[PowerUpModal] Opponent Team:', opponentTeam);
+        console.log('[PowerUpModal] Session ID:', gameSessionId);
+
         const success = usePowerUp(type, selectedTargetId ?? undefined);
+        console.log('[PowerUpModal] usePowerUp success:', success);
 
         if (success) {
             // Team mode: Apply power-up to opponent team via Firebase
             if (isTeamMode && gameSessionId && myTeam && opponentTeam) {
                 const mode = isDemoMode ? 'admin' : 'user';
+                console.log('[PowerUpModal] Applying team mode power-up, mode:', mode);
 
-                if (type === 'pointSteal') {
-                    // Steal 15% of opponent's points
-                    const stolenPoints = await stealPointsFromTeam(
-                        gameSessionId,
-                        myTeam,
-                        opponentTeam,
-                        0.15,
-                        mode
-                    );
-                    console.log(`[PowerUp] Stole ${stolenPoints} points from ${opponentTeam}`);
-                } else if (type === 'freeze') {
-                    // Apply freeze effect to opponent
-                    await applyPowerUpEffect(gameSessionId, opponentTeam, 'freeze', mode);
-                    await sendNotification(gameSessionId, {
-                        type: 'freeze',
-                        team: myTeam,
-                        message: `❄️ ${myTeam} froze ${opponentTeam}'s combo multiplier!`
-                    }, mode);
-                } else if (type === 'scramble') {
-                    // Apply scramble effect to opponent
-                    await applyPowerUpEffect(gameSessionId, opponentTeam, 'scramble', mode);
-                    await sendNotification(gameSessionId, {
-                        type: 'scramble',
-                        team: myTeam,
-                        message: `🌪️ ${myTeam} scrambled ${opponentTeam}'s answers!`
-                    }, mode);
-                } else if (type === 'lifeDrain') {
-                    // Drain a life from opponent
-                    await drainLifeFromTeam(gameSessionId, opponentTeam, mode);
-                    await sendNotification(gameSessionId, {
-                        type: 'lifeDrain',
-                        team: myTeam,
-                        message: `💀 ${myTeam} drained a life from ${opponentTeam}!`
-                    }, mode);
+                try {
+                    if (type === 'pointSteal') {
+                        console.log('[PowerUpModal] Executing point steal...');
+                        const stolenPoints = await stealPointsFromTeam(
+                            gameSessionId,
+                            myTeam,
+                            opponentTeam,
+                            0.15,
+                            mode
+                        );
+                        console.log(`[PowerUpModal] ✅ Stole ${stolenPoints} points from ${opponentTeam}`);
+                    } else if (type === 'freeze') {
+                        console.log('[PowerUpModal] Executing freeze...');
+                        await applyPowerUpEffect(gameSessionId, opponentTeam, 'freeze', mode);
+                        await sendNotification(gameSessionId, {
+                            type: 'freeze',
+                            team: myTeam,
+                            message: `❄️ ${myTeam} froze ${opponentTeam}'s combo multiplier!`
+                        }, mode);
+                        console.log('[PowerUpModal] ✅ Freeze applied');
+                    } else if (type === 'scramble') {
+                        console.log('[PowerUpModal] Executing scramble...');
+                        await applyPowerUpEffect(gameSessionId, opponentTeam, 'scramble', mode);
+                        await sendNotification(gameSessionId, {
+                            type: 'scramble',
+                            team: myTeam,
+                            message: `🌪️ ${myTeam} scrambled ${opponentTeam}'s answers!`
+                        }, mode);
+                        console.log('[PowerUpModal] ✅ Scramble applied');
+                    } else if (type === 'lifeDrain') {
+                        console.log('[PowerUpModal] Executing life drain...');
+                        await drainLifeFromTeam(gameSessionId, opponentTeam, mode);
+                        await sendNotification(gameSessionId, {
+                            type: 'lifeDrain',
+                            team: myTeam,
+                            message: `💀 ${myTeam} drained a life from ${opponentTeam}!`
+                        }, mode);
+                        console.log('[PowerUpModal] ✅ Life drain applied');
+                    }
+                } catch (error) {
+                    console.error('[PowerUpModal] ❌ Error applying power-up:', error);
                 }
             } else {
+                console.log('[PowerUpModal] Solo mode - applying local effects');
                 // Solo mode: Apply local effects
                 if (type !== 'pointSteal' && type !== 'lifeDrain') {
                     addActiveEffect({
@@ -90,6 +108,7 @@ export const PowerUpModal: React.FC<PowerUpModalProps> = ({ type, onClose }) => 
                     console.log(`Applied instant effect ${type} to ${selectedTargetId}`);
                 }
             }
+            console.log('[PowerUpModal] Closing modal');
             onClose();
         }
     };
