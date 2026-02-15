@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { usePowerUpStore, type PowerUpType } from '../store/powerUpStore';
 import { useLeaderboardStore } from '../store/leaderboardStore';
+import { useTeamStore } from '../store/teamStore';
+import { stealPointsFromTeam, sendNotification } from '../utils/firebaseSync';
+import { useGameStore } from '../store/gameStore';
 import './PowerUpModal.css';
 
 interface PowerUpModalProps {
@@ -12,31 +15,70 @@ interface PowerUpModalProps {
 export const PowerUpModal: React.FC<PowerUpModalProps> = ({ type, onClose }) => {
     const { powerUps, usePowerUp, addActiveEffect } = usePowerUpStore();
     const { entries } = useLeaderboardStore();
+    const { isTeamMode, myTeam, opponentTeam, gameSessionId } = useTeamStore();
+    const { isDemoMode } = useGameStore();
     const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
 
     const powerUp = powerUps[type];
 
-    // Sort entries by score for target selection
-    const potentialTargets = entries.slice(0, 5); // Top 5 players are targets
+    // In team mode, target is the opponent team
+    // In solo mode, target is top 5 players
+    const potentialTargets = isTeamMode
+        ? [{ id: opponentTeam || 'opponent', playerName: opponentTeam || 'Opponent Team', score: 0 }]
+        : entries.slice(0, 5);
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         const success = usePowerUp(type, selectedTargetId ?? undefined);
 
         if (success) {
-            // Apply visual effect
-            if (type !== 'pointSteal' && type !== 'lifeDrain') {
-                // For non-instant effects, add to active effects
-                addActiveEffect({
-                    type,
-                    targetId: selectedTargetId ?? undefined,
-                    duration: 2, // Default duration
-                    appliedAt: Date.now()
-                });
+            // Team mode: Apply power-up to opponent team via Firebase
+            if (isTeamMode && gameSessionId && myTeam && opponentTeam) {
+                const mode = isDemoMode ? 'admin' : 'user';
+
+                if (type === 'pointSteal') {
+                    // Steal 15% of opponent's points
+                    const stolenPoints = await stealPointsFromTeam(
+                        gameSessionId,
+                        myTeam,
+                        opponentTeam,
+                        0.15,
+                        mode
+                    );
+                    console.log(`[PowerUp] Stole ${stolenPoints} points from ${opponentTeam}`);
+                } else if (type === 'freeze') {
+                    // Send freeze notification to opponent
+                    await sendNotification(gameSessionId, {
+                        type: 'freeze',
+                        team: myTeam,
+                        message: `❄️ ${myTeam} froze ${opponentTeam}'s combo multiplier!`
+                    }, mode);
+                } else if (type === 'scramble') {
+                    // Send scramble notification
+                    await sendNotification(gameSessionId, {
+                        type: 'scramble',
+                        team: myTeam,
+                        message: `🌪️ ${myTeam} scrambled ${opponentTeam}'s answers!`
+                    }, mode);
+                } else if (type === 'lifeDrain') {
+                    // Send life drain notification
+                    await sendNotification(gameSessionId, {
+                        type: 'lifeDrain',
+                        team: myTeam,
+                        message: `💀 ${myTeam} drained a life from ${opponentTeam}!`
+                    }, mode);
+                }
             } else {
-                // For instant effects like point steal/life drain
-                // In a real backend, we'd send this to server
-                // For local demo, we just simulate success
-                console.log(`Applied instant effect ${type} to ${selectedTargetId}`);
+                // Solo mode: Apply local effects
+                if (type !== 'pointSteal' && type !== 'lifeDrain') {
+                    addActiveEffect({
+                        type,
+                        targetId: selectedTargetId ?? undefined,
+                        duration: 2,
+                        appliedAt: Date.now()
+                    });
+                } else {
+                    console.log(`Applied instant effect ${type} to ${selectedTargetId}`);
+                }
             }
             onClose();
         }
@@ -53,11 +95,17 @@ export const PowerUpModal: React.FC<PowerUpModalProps> = ({ type, onClose }) => 
                 <div className="modal-header">
                     <span className="modal-icon">{powerUp.icon}</span>
                     <h2 className="modal-title">{powerUp.name}</h2>
-                    <p className="modal-description">{powerUp.description}</p>
+                    <p className="modal-description">
+                        {isTeamMode
+                            ? `Attack the opponent team with ${powerUp.name}!`
+                            : powerUp.description}
+                    </p>
                 </div>
 
                 <div className="target-selection">
-                    <label className="target-label">Select Target:</label>
+                    <label className="target-label">
+                        {isTeamMode ? 'Target Team:' : 'Select Target:'}
+                    </label>
                     <div className="target-list">
                         {potentialTargets.map((entry, index) => (
                             <div
@@ -65,9 +113,9 @@ export const PowerUpModal: React.FC<PowerUpModalProps> = ({ type, onClose }) => 
                                 className={`target-item ${selectedTargetId === entry.id ? 'selected' : ''}`}
                                 onClick={() => setSelectedTargetId(entry.id)}
                             >
-                                <span className="target-rank">#{index + 1}</span>
+                                {!isTeamMode && <span className="target-rank">#{index + 1}</span>}
                                 <span className="target-name">{entry.playerName}</span>
-                                <span className="target-score">{entry.score.toLocaleString()}</span>
+                                {!isTeamMode && <span className="target-score">{entry.score.toLocaleString()}</span>}
                             </div>
                         ))}
                     </div>
@@ -79,8 +127,9 @@ export const PowerUpModal: React.FC<PowerUpModalProps> = ({ type, onClose }) => 
                         className="btn-confirm"
                         onClick={handleConfirm}
                         disabled={!selectedTargetId}
+                        style={{ background: selectedTargetId ? powerUp.color : '#666' }}
                     >
-                        Activate Chain
+                        Use Power-Up
                     </button>
                 </div>
             </motion.div>

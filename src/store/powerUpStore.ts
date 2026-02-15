@@ -61,35 +61,35 @@ export const usePowerUpStore = create<PowerUpState>((set, get) => ({
         pointSteal: {
             type: 'pointSteal',
             name: 'Point Steal',
-            description: 'Steal 10-20% of points from the leading player',
+            description: 'Steal 15% of points from the opponent team',
             icon: '⚡',
             color: '#FFD700'
         },
         freeze: {
             type: 'freeze',
             name: 'Freeze',
-            description: 'Disable combo multiplier for 2 questions',
+            description: 'Disable opponent team combo multiplier for 2 questions',
             icon: '❄️',
             color: '#00BFFF'
         },
         timePressure: {
             type: 'timePressure',
             name: 'Time Pressure',
-            description: 'Reduce answer time by 50% for next question',
+            description: 'Reduce opponent answer time by 50% for next question',
             icon: '⏰',
             color: '#FF6347'
         },
         lifeDrain: {
             type: 'lifeDrain',
             name: 'Life Drain',
-            description: 'Remove 1 life from target player',
+            description: 'Remove 1 life from opponent team',
             icon: '💀',
             color: '#8B008B'
         },
         scramble: {
             type: 'scramble',
             name: 'Scramble',
-            description: 'Shuffle answer options for next question',
+            description: 'Shuffle opponent answer options for next question',
             icon: '🌪️',
             color: '#FF8C00'
         }

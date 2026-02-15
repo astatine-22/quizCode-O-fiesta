@@ -173,10 +173,13 @@ function App() {
         addSpeedBonus();
       }
 
-      // Check power-up earning milestones
-      if (streak + 1 === 3) earnPowerUp('pointSteal');
-      if (streak + 1 === 5) earnPowerUp('freeze');
-      if (streak + 1 === 7) earnPowerUp('scramble');
+      // Check power-up earning milestones - unlock all power-ups at streak 3
+      if (streak + 1 === 3) {
+        earnPowerUp('pointSteal');
+        earnPowerUp('freeze');
+        earnPowerUp('scramble');
+        earnPowerUp('lifeDrain');
+      }
 
       // Perfect Category bonus check happens in store, 
       // but let's say perfect answer gives life drain chance
