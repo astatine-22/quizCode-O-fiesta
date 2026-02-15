@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { usePowerUpStore, type PowerUpType } from '../store/powerUpStore';
 import { useLeaderboardStore } from '../store/leaderboardStore';
 import { useTeamStore } from '../store/teamStore';
-import { stealPointsFromTeam, sendNotification } from '../utils/firebaseSync';
+import { stealPointsFromTeam, sendNotification, applyPowerUpEffect, drainLifeFromTeam } from '../utils/firebaseSync';
 import { useGameStore } from '../store/gameStore';
 import './PowerUpModal.css';
 
@@ -53,21 +53,24 @@ export const PowerUpModal: React.FC<PowerUpModalProps> = ({ type, onClose }) => 
                     );
                     console.log(`[PowerUp] Stole ${stolenPoints} points from ${opponentTeam}`);
                 } else if (type === 'freeze') {
-                    // Send freeze notification to opponent
+                    // Apply freeze effect to opponent
+                    await applyPowerUpEffect(gameSessionId, opponentTeam, 'freeze', mode);
                     await sendNotification(gameSessionId, {
                         type: 'freeze',
                         team: myTeam,
                         message: `❄️ ${myTeam} froze ${opponentTeam}'s combo multiplier!`
                     }, mode);
                 } else if (type === 'scramble') {
-                    // Send scramble notification
+                    // Apply scramble effect to opponent
+                    await applyPowerUpEffect(gameSessionId, opponentTeam, 'scramble', mode);
                     await sendNotification(gameSessionId, {
                         type: 'scramble',
                         team: myTeam,
                         message: `🌪️ ${myTeam} scrambled ${opponentTeam}'s answers!`
                     }, mode);
                 } else if (type === 'lifeDrain') {
-                    // Send life drain notification
+                    // Drain a life from opponent
+                    await drainLifeFromTeam(gameSessionId, opponentTeam, mode);
                     await sendNotification(gameSessionId, {
                         type: 'lifeDrain',
                         team: myTeam,

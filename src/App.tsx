@@ -449,6 +449,9 @@ function App() {
           correctAnswers={sessionHistory.filter(h => h.correct).length}
         />
       )}
+
+      {/* Power-Up Inventory - Show during playing phase */}
+      {gamePhase === 'playing' && <PowerUpInventory />}
     </>
   );
 }

@@ -34,6 +34,7 @@ export const getOrCreateActiveSession = async (mode: 'user' | 'admin'): Promise<
 /**
  * Creates a new game session in Firebase
  * @param mode 'user' or 'admin'
+ * @param customSessionId Optional custom session ID (for room codes)
  * @returns sessionId
  */
 export const createGameSession = async (mode: 'user' | 'admin', customSessionId?: string): Promise<string> => {
@@ -88,6 +89,7 @@ export const joinGameSession = async (
             currentQuestion: 0,
             ready: false,
             members: [playerName],
+            activeEffects: [], // Track active power-up effects
             powerUps: {
                 pointSteal: 0,
                 freeze: 0,
@@ -163,6 +165,62 @@ export const sendNotification = async (
     });
 
     console.log(`[Firebase] Notification sent:`, notification.message);
+};
+
+/**
+ * Apply a power-up effect to opponent team
+ * @param sessionId 
+ * @param opponentTeam 
+ * @param effectType 
+ * @param mode 
+ */
+export const applyPowerUpEffect = async (
+    sessionId: string,
+    opponentTeam: TeamName,
+    effectType: string,
+    mode: 'user' | 'admin'
+): Promise<void> => {
+    if (!opponentTeam) return;
+
+    const effectsRef = ref(database, `games/${mode}/${sessionId}/teams/${opponentTeam}/activeEffects`);
+    const snapshot = await get(effectsRef);
+    const currentEffects = snapshot.val() || [];
+
+    // Add new effect
+    const newEffect = {
+        type: effectType,
+        duration: 2, // 2 questions
+        appliedAt: Date.now()
+    };
+
+    await set(effectsRef, [...currentEffects, newEffect]);
+    console.log(`[Firebase] Applied ${effectType} effect to ${opponentTeam}`);
+};
+
+/**
+ * Drain a life from opponent team
+ * @param sessionId 
+ * @param opponentTeam 
+ * @param mode 
+ */
+export const drainLifeFromTeam = async (
+    sessionId: string,
+    opponentTeam: TeamName,
+    mode: 'user' | 'admin'
+): Promise<void> => {
+    if (!opponentTeam) return;
+
+    const teamRef = ref(database, `games/${mode}/${sessionId}/teams/${opponentTeam}`);
+    const snapshot = await get(teamRef);
+    const teamData = snapshot.val();
+
+    if (teamData && teamData.lives > 0) {
+        await update(teamRef, {
+            lives: teamData.lives - 1,
+            timestamp: Date.now()
+        });
+        console.log(`[Firebase] Drained 1 life from ${opponentTeam}, remaining: ${teamData.lives - 1}`);
+    }
 };
 
 /**
