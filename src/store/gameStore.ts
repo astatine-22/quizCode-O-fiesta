@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { GAME_CONFIG, calculateComboMultiplier, calculateSpeedBonus, getGambleMultiplier, type GambleType } from '../config/gameConfig';
 
 export type GamePhase = 'menu' | 'playing' | 'gamble' | 'duel' | 'gameOver';
 export type GameMode = 'normal' | 'timeAttack';
@@ -76,13 +77,18 @@ interface GameState {
     setTimeAttackRemaining: (time: number) => void;
     addTimeBonus: (seconds: number) => void;
     subtractTimePenalty: (seconds: number) => void;
+
+    // Encapsulated Game Logic Actions
+    submitAnswer: (answerIndex: number, isCorrect: boolean, answerTime: number, questionData: { id: number; category: string }) => { shouldTransitionToGamble: boolean; points: number };
+    handleBankAction: () => { shouldContinue: boolean };
+    handleGambleAction: (type: GambleType, result: boolean, currentQuestionPoints: number) => { shouldContinue: boolean };
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
     // Initial state
-    score: 0,
-    streak: 0,
-    lives: 5,
+    score: GAME_CONFIG.INITIAL_SCORE,
+    streak: GAME_CONFIG.INITIAL_STREAK,
+    lives: GAME_CONFIG.INITIAL_LIVES,
     questionIndex: 0,
     gamePhase: 'menu',
     sessionHistory: [],
@@ -99,7 +105,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     gamblesLost: 0,
     allInWins: 0,
     speedBonusCount: 0,
-    timeAttackRemaining: 180, // 3 minutes
+    timeAttackRemaining: GAME_CONFIG.TIME_ATTACK.INITIAL_TIME,
     isDemoMode: false,
 
     toggleDemoMode: () => set((state) => {
@@ -216,11 +222,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     // Combo actions
     incrementCombo: () => set((state) => {
         const newCombo = state.comboCount + 1;
-        let multiplier = 1;
-
-        if (newCombo >= 5) multiplier = 4;
-        else if (newCombo >= 3) multiplier = 3;
-        else if (newCombo >= 2) multiplier = 2;
+        const multiplier = calculateComboMultiplier(newCombo);
 
         console.log(`[GameStore] Combo: ${newCombo} (${multiplier}x)`);
         return {
@@ -259,7 +261,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
         Object.values(categoryStats).forEach(stats => {
             if (stats.total > 0 && stats.correct === stats.total) {
-                bonus += 200; // 200 points per perfect category
+                bonus += GAME_CONFIG.CATEGORY_PERFECT_BONUS;
             }
         });
 
@@ -288,5 +290,97 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     subtractTimePenalty: (seconds) => set((state) => ({
         timeAttackRemaining: Math.max(0, state.timeAttackRemaining - seconds)
-    }))
+    })),
+
+    // Encapsulated Game Logic Actions
+    submitAnswer: (_answerIndex, isCorrect, answerTime, questionData) => {
+        const state = get();
+
+        if (isCorrect) {
+            console.log('✓ Correct answer!');
+
+            // Increment streak
+            const newStreak = state.streak + 1;
+            set({
+                streak: newStreak,
+                maxStreak: Math.max(state.maxStreak, newStreak)
+            });
+
+            // Increment combo (will be handled by caller if frozen)
+            // Caller should check hasActiveEffect('freeze') before calling incrementCombo
+
+            // Update category stats
+            get().updateCategoryStats(questionData.category, true);
+
+            // Track fastest answer
+            get().updateFastestAnswer(answerTime);
+
+            // Calculate speed bonus
+            const speedBonusResult = calculateSpeedBonus(answerTime);
+            if (speedBonusResult.points > 0) {
+                get().addSpeedBonus();
+            }
+
+            // Calculate base points with combo multiplier
+            const basePoints = GAME_CONFIG.BASE_POINTS + (newStreak * GAME_CONFIG.STREAK_BONUS_PER_LEVEL);
+            const totalPoints = (basePoints + speedBonusResult.points) * state.comboMultiplier;
+
+            // Add points
+            get().addPoints(totalPoints);
+
+            // Add to history
+            get().addToHistory({
+                correct: true,
+                points: totalPoints,
+                questionId: questionData.id,
+                category: questionData.category,
+                answerTime
+            });
+
+            return { shouldTransitionToGamble: true, points: totalPoints };
+        } else {
+            console.log('✗ Wrong answer!');
+
+            // Reset streak and combo
+            get().resetStreak();
+            get().resetCombo();
+
+            // Update category stats
+            get().updateCategoryStats(questionData.category, false);
+
+            // Consume life
+            get().consumeLife();
+
+            // Add to history
+            get().addToHistory({
+                correct: false,
+                points: 0,
+                questionId: questionData.id,
+                category: questionData.category,
+                answerTime
+            });
+
+            return { shouldTransitionToGamble: false, points: 0 };
+        }
+    },
+
+    handleBankAction: () => {
+        const state = get();
+
+        // Just move to next question
+        // Caller will check if there are more questions
+        return { shouldContinue: true };
+    },
+
+    handleGambleAction: (type, result, currentQuestionPoints) => {
+        if (result) {
+            const multiplier = getGambleMultiplier(type);
+            get().gambleWin(multiplier, currentQuestionPoints, type === 'allin');
+        } else {
+            get().gambleLose();
+            get().resetCombo(); // Reset combo on gamble loss
+        }
+
+        return { shouldContinue: true };
+    }
 }));

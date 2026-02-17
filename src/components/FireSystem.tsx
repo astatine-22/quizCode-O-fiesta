@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { ParticleSystem } from '../utils/ParticleSystem';
+import { useGameStore } from '../store/gameStore';
 import './FireSystem.css';
 
 interface FireSystemProps {
-    streakLevel: number;
-    isActive: boolean;
     onIntensityChange?: (intensity: number) => void;
 }
 
@@ -105,10 +104,13 @@ const screenShakeVariants: Variants = {
 };
 
 export const FireSystem: React.FC<FireSystemProps> = ({
-    streakLevel,
-    isActive,
     onIntensityChange
 }) => {
+    // Atomic subscriptions
+    const streakLevel = useGameStore(state => state.streak);
+    const gamePhase = useGameStore(state => state.gamePhase);
+    const isActive = gamePhase === 'playing' || gamePhase === 'gamble';
+
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const particleSystemRef = useRef<ParticleSystem | null>(null);
     const animationFrameRef = useRef<number | undefined>(undefined);

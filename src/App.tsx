@@ -1,22 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { FireSystem } from './components/FireSystem';
-import { GambleArena } from './components/GambleArena';
-import { QuestionCard } from './components/QuestionCard';
-import { ScoreCounter } from './components/ScoreCounter';
-import { GameOver } from './components/GameOver';
-import { ComboDisplay } from './components/ComboDisplay';
-import { AchievementToast } from './components/AchievementToast';
-import { Leaderboard } from './components/Leaderboard';
 import { PowerUpInventory } from './components/PowerUpInventory';
 import { ActiveEffects } from './components/ActiveEffects';
 import { AttackAnimation } from './components/AttackAnimation';
 import { DuelChallenge } from './components/DuelChallenge';
-import { DuelArena } from './components/DuelArena';
 import { TeamSelection } from './components/TeamSelection';
 import { WaitingRoom } from './components/WaitingRoom';
-import { OpponentStatus } from './components/OpponentStatus';
-import { LiveNotifications } from './components/LiveNotifications';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { useGameStore } from './store/gameStore';
 import { useTeamStore } from './store/teamStore';
@@ -26,49 +17,71 @@ import { usePowerUpStore, type PowerUpType } from './store/powerUpStore';
 import { useDuelStore } from './store/duelStore';
 
 import { userQuestions, adminQuestions, shuffleQuestions, type Question } from './data/questions';
+import { GAME_CONFIG } from './config/gameConfig';
+import type { GambleType } from './config/gameConfig';
+
+// Lazy-loaded views for code splitting
+const MainMenuView = lazy(() => import('./views/MainMenuView').then(m => ({ default: m.MainMenuView })));
+const GameplayView = lazy(() => import('./views/GameplayView').then(m => ({ default: m.GameplayView })));
+const GambleView = lazy(() => import('./views/GambleView').then(m => ({ default: m.GambleView })));
+const GameOverView = lazy(() => import('./views/GameOverView').then(m => ({ default: m.GameOverView })));
+const DuelArena = lazy(() => import('./components/DuelArena').then(m => ({ default: m.DuelArena })));
+
+// Lazy-loaded components
+const AchievementToast = lazy(() => import('./components/AchievementToast').then(m => ({ default: m.AchievementToast })));
+
 import './App.css';
 
 function App() {
+  // Zustand store selectors
   const {
-    score,
-    streak,
-    lives,
     questionIndex,
     gamePhase,
-    sessionHistory,
-    maxStreak,
-    comboCount,
-    comboMultiplier,
-    incrementStreak,
-    resetStreak,
-    gambleWin,
-    gambleLose,
-    consumeLife,
-    nextQuestion,
     restartGame,
     setGamePhase,
-    addToHistory,
-    addPoints,
+    submitAnswer,
+    handleBankAction,
+    handleGambleAction,
+    nextQuestion,
     incrementCombo,
-    resetCombo,
-    updateCategoryStats,
-    updateFastestAnswer,
-    addSpeedBonus
+    isDemoMode,
   } = useGameStore();
 
   const { initializeAchievements, checkAndUnlock } = useAchievementStore();
   const { loadLeaderboard } = useLeaderboardStore();
-  const { earnPowerUp, activeEffects, decrementEffectDurations, hasActiveEffect } = usePowerUpStore();
+  const { earnPowerUp, activeEffects, hasActiveEffect } = usePowerUpStore();
   const { incrementQuestionCounter: incrementDuelCounter } = useDuelStore();
   const { isTeamMode, myTeam, syncMyTeamData } = useTeamStore();
 
-  const [fireIntensity, setFireIntensity] = useState(0);
+  // Local state
   const [showTeamSelection, setShowTeamSelection] = useState(false);
   const [showWaitingRoom, setShowWaitingRoom] = useState(false);
   const [gameQuestions, setGameQuestions] = useState<Question[]>([]);
   const [currentQuestionPoints, setCurrentQuestionPoints] = useState(100);
   const [unlockedAchievement, setUnlockedAchievement] = useState<Achievement | null>(null);
   const [currentAttackAnim, setCurrentAttackAnim] = useState<PowerUpType | null>(null);
+
+  // Timeout refs for cleanup
+  const timeoutRefs = useRef<number[]>([]);
+
+  // Helper to add timeout with cleanup tracking
+  const addTimeout = (callback: () => void, delay: number) => {
+    const timeout = setTimeout(() => {
+      callback();
+      // Remove from tracking array
+      timeoutRefs.current = timeoutRefs.current.filter(t => t !== timeout);
+    }, delay);
+    timeoutRefs.current.push(timeout);
+    return timeout;
+  };
+
+  // Cleanup all timeouts on unmount or game restart
+  useEffect(() => {
+    return () => {
+      timeoutRefs.current.forEach(clearTimeout);
+      timeoutRefs.current = [];
+    };
+  }, []);
 
   // Initialize stores on mount
   useEffect(() => {
@@ -81,7 +94,6 @@ function App() {
   useEffect(() => {
     if (activeEffects.length > 0) {
       const latest = activeEffects[activeEffects.length - 1];
-      // Only show animation if it was just applied (diff < 1000ms)
       if (Date.now() - latest.appliedAt < 1000) {
         setCurrentAttackAnim(latest.type);
       }
@@ -94,37 +106,25 @@ function App() {
       if (e.ctrlKey && e.shiftKey && (e.key === 'x' || e.key === 'X')) {
         const { toggleDemoMode, isDemoMode } = useGameStore.getState();
         toggleDemoMode();
-
-        // Restart game to return to menu with new mode active
-        const { restartGame, setGamePhase } = useGameStore.getState();
         restartGame();
 
-        // Load appropriate questions
-        // Note: isDemoMode here is the *previous* value because we just called toggle
-        // So if it WAS false (user mode), now it is true (admin mode)
         if (!isDemoMode) {
           setGameQuestions(shuffleQuestions(adminQuestions));
-          setGamePhase('menu'); // Go to Admin Menu
+          setGamePhase('menu');
         } else {
           setGameQuestions(shuffleQuestions(userQuestions));
-          setGamePhase('menu'); // Return to User Menu
+          setGamePhase('menu');
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const handleIntensityChange = (intensity: number) => {
-    setFireIntensity(intensity);
-  };
+  }, [restartGame, setGamePhase]);
 
   const handleStartGame = () => {
-    const { isDemoMode } = useGameStore.getState();
     restartGame();
 
-    // Always use standard gameplay view for both modes now
     if (isDemoMode) {
       setGameQuestions(shuffleQuestions(adminQuestions));
     } else {
@@ -136,167 +136,116 @@ function App() {
   const handleAnswerSelected = (answerIndex: number, isCorrect: boolean, answerTime: number) => {
     const currentQuestion = gameQuestions[questionIndex];
 
+    // Use the encapsulated game logic from the store
+    const result = submitAnswer(answerIndex, isCorrect, answerTime, {
+      id: currentQuestion.id,
+      category: currentQuestion.category,
+    });
+
     if (isCorrect) {
-      console.log('✓ Correct answer!');
-
-      // Increment streak and combo (unless frozen)
-      incrementStreak();
-
-      // Sync with Firebase in team mode
-      if (isTeamMode && myTeam) {
-        syncMyTeamData({ streak: streak + 1 });
-      }
-
+      // Handle combo increment (check for freeze effect)
       const isFrozen = hasActiveEffect('freeze');
       if (!isFrozen) {
         incrementCombo();
       }
 
-      // Decrement effect durations
+      // Sync with Firebase in team mode
+      if (isTeamMode && myTeam) {
+        const { streak, score } = useGameStore.getState();
+        syncMyTeamData({ streak, score });
+      }
+
+      // Decrement effect durations and increment duel counter
+      const { decrementEffectDurations } = usePowerUpStore.getState();
       decrementEffectDurations();
       incrementDuelCounter();
 
-      // Update category stats
-      updateCategoryStats(currentQuestion.category, true);
-
-      // Track fastest answer
-      updateFastestAnswer(answerTime);
-
-      // Check for speed bonus
-      let speedBonus = 0;
-      if (answerTime < 3) {
-        speedBonus = 100;
-        addSpeedBonus();
-        earnPowerUp('timePressure'); // Earn Time Pressure on very fast answer
-      } else if (answerTime < 5) {
-        speedBonus = 50;
-        addSpeedBonus();
+      // Check for speed bonus power-up earning
+      if (answerTime < GAME_CONFIG.SPEED_BONUS.VERY_FAST_THRESHOLD) {
+        earnPowerUp('timePressure');
       }
 
-      // Check power-up earning milestones - unlock all power-ups at streak 3
-      if (streak + 1 === 3) {
+      // Check power-up earning milestones
+      const { streak } = useGameStore.getState();
+      if (streak === GAME_CONFIG.ACHIEVEMENTS.POWER_UP_UNLOCK_STREAK) {
         earnPowerUp('pointSteal');
         earnPowerUp('freeze');
         earnPowerUp('scramble');
         earnPowerUp('lifeDrain');
       }
 
-      // Perfect Category bonus check happens in store, 
-      // but let's say perfect answer gives life drain chance
-      if (Math.random() > 0.9) earnPowerUp('lifeDrain'); // Rare drop
-
-      // Calculate base points with combo multiplier
-      const basePoints = 100 + (streak * 10);
-      const totalPoints = (basePoints + speedBonus) * (isFrozen ? 1 : comboMultiplier);
-      setCurrentQuestionPoints(totalPoints);
-      addPoints(totalPoints);
-
-      // Sync score with Firebase in team mode
-      if (isTeamMode && myTeam) {
-        syncMyTeamData({ score: score + totalPoints });
+      // Random life drain drop
+      if (Math.random() < GAME_CONFIG.POWER_UP_DROP_RATES.LIFE_DRAIN_CHANCE) {
+        earnPowerUp('lifeDrain');
       }
 
-      // Add to history
-      addToHistory({
-        correct: true,
-        points: totalPoints,
-        questionId: currentQuestion.id,
-        category: currentQuestion.category,
-        answerTime
-      });
+      // Store points for gamble phase
+      setCurrentQuestionPoints(result.points);
 
       // Check achievements
-      if (sessionHistory.filter(h => h.correct).length === 0) {
+      const { sessionHistory } = useGameStore.getState();
+      if (sessionHistory.filter(h => h.correct).length === 1) {
         const achievement = checkAndUnlock('first_blood');
         if (achievement) setUnlockedAchievement(achievement);
       }
 
-      // Trigger gamble phase
-      setTimeout(() => {
+      // Transition to gamble phase
+      addTimeout(() => {
         setGamePhase('gamble');
-      }, 1000);
-
+      }, GAME_CONFIG.TRANSITIONS.CORRECT_ANSWER_TO_GAMBLE);
     } else {
-      console.log('✗ Wrong answer!');
-
-      // Reset streak and combo
-      resetStreak();
-      resetCombo();
-
-      // Update category stats
-      updateCategoryStats(currentQuestion.category, false);
-
-      // Consume life
-      consumeLife();
-
       // Sync lives with Firebase in team mode
       if (isTeamMode && myTeam) {
-        syncMyTeamData({ lives: lives - 1 });
+        const { lives } = useGameStore.getState();
+        syncMyTeamData({ lives });
       }
 
-      // Add to history
-      addToHistory({
-        correct: false,
-        points: 0,
-        questionId: currentQuestion.id,
-        category: currentQuestion.category,
-        answerTime
-      });
-
-      // Move to next question or game over
-      setTimeout(() => {
-        if (lives > 1) {
+      // Move to next question or game over (handled by store)
+      addTimeout(() => {
+        const { lives } = useGameStore.getState();
+        if (lives > 0) {
           nextQuestion();
         }
-        // If lives = 1, consumeLife will set gamePhase to 'gameOver'
-      }, 1500);
+      }, GAME_CONFIG.TRANSITIONS.WRONG_ANSWER_TO_NEXT);
     }
   };
 
   const handleBank = () => {
     console.log('Banked points!');
+    handleBankAction();
 
-    // Move to next question
     if (questionIndex < gameQuestions.length - 1) {
       nextQuestion();
     } else {
-      // No more questions
       setGamePhase('gameOver');
     }
   };
 
-  const handleGamble = (type: 'double' | 'triple' | 'allin', result: boolean) => {
-    if (result) {
-      // Enhanced multipliers: double=2x, triple=4x, allin=6x
-      const multiplier = type === 'double' ? 2 : type === 'triple' ? 4 : 6;
-      gambleWin(multiplier, currentQuestionPoints, type === 'allin');
+  const handleGamble = (type: GambleType, result: boolean) => {
+    handleGambleAction(type, result, currentQuestionPoints);
 
-      // Check achievements
+    // Check achievements
+    if (result) {
       const achievement = checkAndUnlock('risk_taker');
       if (achievement) setUnlockedAchievement(achievement);
 
-      // Check for high roller (3 AllIn wins)
       if (type === 'allin') {
         const { allInWins } = useGameStore.getState();
-        if (allInWins >= 3) {
+        if (allInWins >= GAME_CONFIG.ACHIEVEMENTS.HIGH_ROLLER_ALLIN_WINS) {
           const highRoller = checkAndUnlock('high_roller');
           if (highRoller) setUnlockedAchievement(highRoller);
         }
       }
-    } else {
-      gambleLose();
-      resetCombo(); // Reset combo on gamble loss
     }
 
     // Move to next question
-    setTimeout(() => {
+    addTimeout(() => {
       if (questionIndex < gameQuestions.length - 1) {
         nextQuestion();
       } else {
-        // No more questions
         setGamePhase('gameOver');
       }
-    }, 500);
+    }, GAME_CONFIG.TRANSITIONS.GAMBLE_RESULT_TO_NEXT);
   };
 
   const handleTeamSelected = () => {
@@ -313,8 +262,18 @@ function App() {
     setShowTeamSelection(true);
   };
 
+  const handleErrorReset = () => {
+    // Clear all timeouts
+    timeoutRefs.current.forEach(clearTimeout);
+    timeoutRefs.current = [];
+
+    // Reset to menu
+    restartGame();
+    setGamePhase('menu');
+  };
+
   return (
-    <>
+    <ErrorBoundary onReset={handleErrorReset}>
       {/* Team Mode Screens */}
       {showTeamSelection && (
         <TeamSelection onTeamSelected={handleTeamSelected} />
@@ -324,135 +283,66 @@ function App() {
         <WaitingRoom onGameStart={handleGameStart} />
       )}
 
-      {/* Team Mode UI Elements */}
-      {isTeamMode && gamePhase === 'playing' && (
-        <>
-          <OpponentStatus />
-          <LiveNotifications />
-        </>
-      )}
-
+      {/* Global UI Elements */}
       <ActiveEffects />
-
       <AttackAnimation
         type={currentAttackAnim}
         onComplete={() => setCurrentAttackAnim(null)}
       />
-
       <DuelChallenge />
 
-      {/* Fire System - Always visible, intensity based on streak */}
-      <FireSystem
-        streakLevel={streak}
-        isActive={gamePhase === 'playing' || gamePhase === 'gamble'}
-        onIntensityChange={handleIntensityChange}
-      />
+      {/* Fire System - Always visible */}
+      <FireSystem />
 
       {/* Power Up Inventory */}
       {(gamePhase === 'playing' || gamePhase === 'gamble') && (
         <PowerUpInventory />
       )}
 
-      {/* Score Counter - Visible during gameplay */}
-      {(gamePhase === 'playing' || gamePhase === 'gamble') && (
-        <ScoreCounter score={score} streak={streak} lives={lives} />
-      )}
-
-      {/* Combo Display - Shows during gameplay when combo >= 2 */}
-      {(gamePhase === 'playing' || gamePhase === 'gamble') && (
-        <ComboDisplay comboCount={comboCount} multiplier={comboMultiplier} />
-      )}
-
       {/* Achievement Toast */}
-      <AchievementToast
-        achievement={unlockedAchievement}
-        onDismiss={() => setUnlockedAchievement(null)}
-      />
+      <Suspense fallback={null}>
+        <AchievementToast
+          achievement={unlockedAchievement}
+          onDismiss={() => setUnlockedAchievement(null)}
+        />
+      </Suspense>
 
-      {/* Menu Screen */}
-      {gamePhase === 'menu' && (
-        <div className="menu-screen">
-          <div className="menu-container" style={useGameStore.getState().isDemoMode ? { borderColor: '#00ff88', boxShadow: '0 0 50px rgba(0, 255, 136, 0.3)' } : {}}>
-            <h1 className="game-title" style={useGameStore.getState().isDemoMode ? { background: 'linear-gradient(135deg, #00ff88, #00b8ff)', WebkitBackgroundClip: 'text' } : {}}>
-              {useGameStore.getState().isDemoMode ? '⚡ ADMIN TRIVIA ⚡' : '🔥 Blaze Trivia Arena 🔥'}
-            </h1>
-            <p className="game-subtitle">
-              {useGameStore.getState().isDemoMode ? 'ADMIN MODE: Play with Original Questions' : 'Answer questions, build your streak, and risk it all!'}
-            </p>
-            <button
-              className="start-button"
-              onClick={handleStartGame}
-              style={useGameStore.getState().isDemoMode ? { background: 'linear-gradient(135deg, #00ff88, #00b8ff)', padding: '1.5rem 2rem' } : {}}
-            >
-              {useGameStore.getState().isDemoMode ? 'START ADMIN GAME ▶' : 'Start Game'}
-            </button>
+      {/* View Routing with Suspense */}
+      <Suspense fallback={<div className="loading-screen">Loading...</div>}>
+        <AnimatePresence mode="wait">
+          {gamePhase === 'menu' && (
+            <MainMenuView
+              onStartGame={handleStartGame}
+              onEnableTeamMode={handleEnableTeamMode}
+            />
+          )}
 
-            <button
-              className="team-mode-button"
-              onClick={handleEnableTeamMode}
-              style={{ marginTop: '15px', background: 'linear-gradient(135deg, #FFD700, #FF6347)', padding: '1rem 2rem' }}
-            >
-              🏆 TEAM BATTLE MODE 🏆
-            </button>
-            <div className="game-rules">
-              <h3>To Play:</h3>
-              <ul>
-                <li>Answer trivia questions correctly to build your streak</li>
-                <li>Build combos for 2x, 3x, 4x multipliers!</li>
-                <li>Collect Power-Ups to attack opponents!</li>
-                <li>Challenge players to 1v1 Duels!</li>
-                <li>Unlock achievements and climb the leaderboard!</li>
-              </ul>
-            </div>
-
-            {/* Leaderboard */}
-            <Leaderboard />
-          </div>
-        </div>
-      )}
-
-      {/* Question Phase */}
-      {gamePhase === 'playing' && gameQuestions[questionIndex] && (
-        <div className="game-container">
-          <AnimatePresence mode="wait">
-            <QuestionCard
-              key={questionIndex}
-              question={gameQuestions[questionIndex]}
-              streak={streak}
+          {gamePhase === 'playing' && gameQuestions[questionIndex] && (
+            <GameplayView
+              currentQuestion={gameQuestions[questionIndex]}
+              questionIndex={questionIndex}
               onAnswerSelected={handleAnswerSelected}
             />
-          </AnimatePresence>
-        </div>
-      )}
+          )}
 
-      {/* Gamble Phase */}
-      {gamePhase === 'gamble' && (
-        <GambleArena
-          currentPoints={currentQuestionPoints}
-          streakLevel={streak}
-          onBank={handleBank}
-          onGamble={handleGamble}
-        />
-      )}
+          {gamePhase === 'gamble' && (
+            <GambleView
+              currentPoints={currentQuestionPoints}
+              onBank={handleBank}
+              onGamble={handleGamble}
+            />
+          )}
 
-      {/* Duel Phase */}
-      {gamePhase === 'duel' && gameQuestions[questionIndex] && (
-        <DuelArena currentQuestion={gameQuestions[questionIndex]} />
-      )}
+          {gamePhase === 'duel' && gameQuestions[questionIndex] && (
+            <DuelArena currentQuestion={gameQuestions[questionIndex]} />
+          )}
 
-      {/* Game Over Screen */}
-      {gamePhase === 'gameOver' && (
-        <GameOver
-          finalScore={score}
-          maxStreak={maxStreak}
-          questionsAnswered={sessionHistory.length}
-          correctAnswers={sessionHistory.filter(h => h.correct).length}
-        />
-      )}
-
-      {/* Power-Up Inventory - Show during playing phase */}
-      {gamePhase === 'playing' && <PowerUpInventory />}
-    </>
+          {gamePhase === 'gameOver' && (
+            <GameOverView />
+          )}
+        </AnimatePresence>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 

@@ -1,13 +1,13 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { useGameStore } from '../store/gameStore';
 import './ComboDisplay.css';
 
-interface ComboDisplayProps {
-    comboCount: number;
-    multiplier: number;
-}
+export const ComboDisplay: React.FC = () => {
+    // Atomic subscriptions
+    const comboCount = useGameStore(state => state.comboCount);
+    const multiplier = useGameStore(state => state.comboMultiplier);
 
-export const ComboDisplay: React.FC<ComboDisplayProps> = ({ comboCount, multiplier }) => {
     const [show, setShow] = useState(false);
 
     useEffect(() => {

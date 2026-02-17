@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { useGameStore } from '../store/gameStore';
 import './ScoreCounter.css';
 
-interface ScoreCounterProps {
-    score: number;
-    streak: number;
-    lives: number;
-}
+export const ScoreCounter: React.FC = () => {
+    // Atomic subscriptions - only re-render when these specific values change
+    const score = useGameStore(state => state.score);
+    const streak = useGameStore(state => state.streak);
+    const lives = useGameStore(state => state.lives);
 
-export const ScoreCounter: React.FC<ScoreCounterProps> = ({ score, streak, lives }) => {
     const [displayScore, setDisplayScore] = useState(score);
     const [prevScore, setPrevScore] = useState(score);
 
