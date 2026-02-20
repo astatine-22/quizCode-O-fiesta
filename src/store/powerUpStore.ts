@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { useTeamStore } from './teamStore';
+import { applyPowerUpEffect, drainLifeFromTeam, stealPointsFromTeam } from '../utils/firebaseSync';
 
 export type PowerUpType = 'pointSteal' | 'freeze' | 'timePressure' | 'lifeDrain' | 'scramble';
 
@@ -35,7 +37,7 @@ interface PowerUpState {
 
     // Actions
     earnPowerUp: (type: PowerUpType) => void;
-    usePowerUp: (type: PowerUpType, targetId?: string) => boolean;
+    usePowerUp: (type: PowerUpType, targetId?: string) => Promise<boolean>;
     addActiveEffect: (effect: ActiveEffect) => void;
     removeActiveEffect: (type: PowerUpType) => void;
     decrementEffectDurations: () => void;
@@ -106,7 +108,7 @@ export const usePowerUpStore = create<PowerUpState>((set, get) => ({
         };
     }),
 
-    usePowerUp: (type, targetId) => {
+    usePowerUp: async (type, targetId) => {
         const state = get();
 
         if (state.inventory[type] <= 0) {
@@ -114,14 +116,53 @@ export const usePowerUpStore = create<PowerUpState>((set, get) => ({
             return false;
         }
 
-        console.log(`[PowerUp] Used: ${type} on target ${targetId || 'self'}`);
+        console.log(`[PowerUp] Used: ${type} on target ${targetId || 'opponent'}`);
 
+        // Decrement inventory
         set({
             inventory: {
                 ...state.inventory,
                 [type]: state.inventory[type] - 1
             }
         });
+
+        // Network attack in team mode
+        const { gameSessionId, myTeam, opponentTeam, isTeamMode } = useTeamStore.getState();
+
+        if (isTeamMode && gameSessionId && myTeam && opponentTeam) {
+            const mode = myTeam.startsWith('Admin') ? 'admin' : 'user';
+
+            try {
+                switch (type) {
+                    case 'lifeDrain':
+                        await drainLifeFromTeam(gameSessionId, opponentTeam, mode);
+                        console.log(`[PowerUp] Life drain attack sent to ${opponentTeam}`);
+                        break;
+
+                    case 'pointSteal':
+                        const stolenPoints = await stealPointsFromTeam(
+                            gameSessionId,
+                            myTeam,
+                            opponentTeam,
+                            0.15, // 15%
+                            mode
+                        );
+                        console.log(`[PowerUp] Stole ${stolenPoints} points from ${opponentTeam}`);
+                        break;
+
+                    case 'freeze':
+                    case 'timePressure':
+                    case 'scramble':
+                        await applyPowerUpEffect(gameSessionId, opponentTeam, type, mode);
+                        console.log(`[PowerUp] ${type} effect applied to ${opponentTeam}`);
+                        break;
+                }
+            } catch (error) {
+                console.error(`[PowerUp] Failed to apply ${type} to opponent:`, error);
+                // Power-up was already consumed, but network attack failed
+                // This is acceptable - the game continues
+            }
+        }
 
         return true;
     },

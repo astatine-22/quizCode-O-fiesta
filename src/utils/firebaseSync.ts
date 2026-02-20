@@ -184,7 +184,12 @@ export const applyPowerUpEffect = async (
 
     const effectsRef = ref(database, `games/${mode}/${sessionId}/teams/${opponentTeam}/activeEffects`);
     const snapshot = await get(effectsRef);
-    const currentEffects = snapshot.val() || [];
+
+    // Firebase stores arrays as plain objects {0: {...}, 1: {...}} — normalize to real array
+    const rawEffects = snapshot.val();
+    const currentEffects: object[] = Array.isArray(rawEffects)
+        ? rawEffects
+        : rawEffects ? Object.values(rawEffects) : [];
 
     // Add new effect
     const newEffect = {

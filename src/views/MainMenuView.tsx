@@ -3,11 +3,10 @@ import { Leaderboard } from '../components/Leaderboard';
 import './MainMenuView.css';
 
 interface MainMenuViewProps {
-    onStartGame: () => void;
     onEnableTeamMode: () => void;
 }
 
-export function MainMenuView({ onStartGame, onEnableTeamMode }: MainMenuViewProps) {
+export function MainMenuView({ onEnableTeamMode }: MainMenuViewProps) {
     const isDemoMode = useGameStore(state => state.isDemoMode);
 
     return (
@@ -35,22 +34,12 @@ export function MainMenuView({ onStartGame, onEnableTeamMode }: MainMenuViewProp
                 </p>
                 <button
                     className="start-button"
-                    onClick={onStartGame}
+                    onClick={onEnableTeamMode}
                     style={isDemoMode ? {
                         background: 'linear-gradient(135deg, #00ff88, #00b8ff)',
                         padding: '1.5rem 2rem'
-                    } : {}}
-                >
-                    {isDemoMode ? 'START ADMIN GAME ▶' : 'Start Game'}
-                </button>
-
-                <button
-                    className="team-mode-button"
-                    onClick={onEnableTeamMode}
-                    style={{
-                        marginTop: '15px',
-                        background: 'linear-gradient(135deg, #FFD700, #FF6347)',
-                        padding: '1rem 2rem'
+                    } : {
+                        background: 'linear-gradient(135deg, #FFD700, #FF6347)'
                     }}
                 >
                     🏆 TEAM BATTLE MODE 🏆

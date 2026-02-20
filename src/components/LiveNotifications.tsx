@@ -25,7 +25,7 @@ export const LiveNotifications: React.FC = () => {
     return (
         <div className="live-notifications-container">
             <AnimatePresence>
-                {notifications.map((notif, index) => {
+                {notifications.map((notif) => {
                     const style = getNotificationStyle(notif.type);
 
                     return (

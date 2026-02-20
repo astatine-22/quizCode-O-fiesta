@@ -22,7 +22,6 @@ export const DuelArena: React.FC<DuelArenaProps> = ({ currentQuestion }) => {
 
     const {
         opponent,
-        duelState,
         playerAnswered,
         opponentAnswered,
         result,

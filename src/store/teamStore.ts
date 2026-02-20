@@ -1,6 +1,8 @@
 import { create } from 'zustand';
-import { ref, set, onValue, off, update, get } from 'firebase/database';
+import { ref, onValue, off, update } from 'firebase/database';
 import { database } from '../config/firebase';
+import { useGameStore } from './gameStore';
+import { usePowerUpStore } from './powerUpStore';
 
 export type TeamName = 'FY_BSc' | 'SY_BSc' | 'Admin1' | 'Admin2' | null;
 
@@ -11,6 +13,11 @@ export interface TeamData {
     currentQuestion: number;
     ready: boolean;
     members: string[];
+    activeEffects?: Array<{
+        type: string;
+        duration: number;
+        appliedAt: number;
+    }>;
     powerUps: {
         pointSteal: number;
         freeze: number;
@@ -56,6 +63,8 @@ interface TeamState {
     setReady: (ready: boolean) => Promise<void>;
     listenToOpponent: () => void;
     stopListeningToOpponent: () => void;
+    listenToMyTeam: () => void;
+    stopListeningToMyTeam: () => void;
 
     // Notifications
     addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void;
@@ -80,6 +89,7 @@ const initialTeamData: TeamData = {
     currentQuestion: 0,
     ready: false,
     members: [],
+    activeEffects: [],
     powerUps: {
         pointSteal: 0,
         freeze: 0,
@@ -87,6 +97,17 @@ const initialTeamData: TeamData = {
         lifeDrain: 0,
         scramble: 0
     }
+};
+
+const getEffectIcon = (type: string): string => {
+    const icons: Record<string, string> = {
+        freeze: '❄️',
+        timePressure: '⏰',
+        scramble: '🌪️',
+        lifeDrain: '💀',
+        pointSteal: '⚡'
+    };
+    return icons[type] || '✨';
 };
 
 export const useTeamStore = create<TeamState>((set, get) => ({
@@ -163,6 +184,122 @@ export const useTeamStore = create<TeamState>((set, get) => ({
         await syncMyTeamData({ ready });
     },
 
+    listenToMyTeam: () => {
+        const { myTeam, gameSessionId } = get();
+
+        if (!myTeam || !gameSessionId) {
+            console.warn('[Team] Cannot listen to my team: No team or session');
+            return;
+        }
+
+        const mode = myTeam.startsWith('Admin') ? 'admin' : 'user';
+        const myTeamRef = ref(database, `games/${mode}/${gameSessionId}/teams/${myTeam}`);
+
+        // Firebase stores arrays as plain objects {0: {...}, 1: {...}} — normalize to real array
+        const toEffectsArray = (val: any): Array<{ type: string; duration: number; appliedAt: number }> => {
+            if (!val) return [];
+            if (Array.isArray(val)) return val;
+            return Object.values(val);
+        };
+
+        onValue(myTeamRef, (snapshot) => {
+            const rawData = snapshot.val() as TeamData | null;
+
+            if (rawData) {
+                // Normalize activeEffects to a real array before storing
+                const data: TeamData = {
+                    ...rawData,
+                    activeEffects: toEffectsArray(rawData.activeEffects)
+                };
+
+                const prevData = get().myTeamData;
+
+                if (prevData) {
+                    // Detect life drain attack
+                    if (data.lives < prevData.lives) {
+                        const livesLost = prevData.lives - data.lives;
+                        get().addNotification({
+                            type: 'power_up_used',
+                            team: get().opponentTeam,
+                            message: `💀 You lost ${livesLost} life to an attack!`
+                        });
+
+                        // Update local game store lives
+                        const gameStore = useGameStore.getState();
+                        const currentLives = gameStore.lives;
+                        const diff = currentLives - data.lives;
+                        for (let i = 0; i < diff; i++) {
+                            gameStore.consumeLife();
+                        }
+
+                        console.log(`[Team] Life drain detected: ${prevData.lives} → ${data.lives}`);
+                    }
+
+                    // Detect point steal attack
+                    if (data.score < prevData.score) {
+                        const stolen = prevData.score - data.score;
+                        get().addNotification({
+                            type: 'points_stolen',
+                            team: get().opponentTeam,
+                            message: `⚡ ${stolen} points stolen!`
+                        });
+
+                        // Update local game store score to match Firebase
+                        const gameStore = useGameStore.getState();
+                        const scoreDiff = data.score - gameStore.score;
+                        if (scoreDiff !== 0) {
+                            gameStore.addPoints(scoreDiff);
+                        }
+
+                        console.log(`[Team] Point steal detected: ${prevData.score} → ${data.score}`);
+                    }
+
+                    // Detect new active effects using Set-based comparison
+                    // (avoids index-based .slice() which breaks with Firebase array-as-object)
+                    const prevEffectsArray = toEffectsArray(prevData.activeEffects);
+                    const newEffectsArray = data.activeEffects || [];
+
+                    const prevTypes = new Set(prevEffectsArray.map(e => e.type));
+                    const addedEffects = newEffectsArray.filter(e => !prevTypes.has(e.type));
+
+                    addedEffects.forEach(effect => {
+                        // Add to local power-up store so QuestionCard/App.tsx can react
+                        usePowerUpStore.getState().addActiveEffect({
+                            type: effect.type as any,
+                            duration: effect.duration,
+                            appliedAt: effect.appliedAt
+                        });
+
+                        // Show notification
+                        get().addNotification({
+                            type: 'power_up_used',
+                            team: get().opponentTeam,
+                            message: `${getEffectIcon(effect.type)} ${effect.type} effect applied!`
+                        });
+
+                        console.log(`[Team] New effect detected: ${effect.type}`);
+                    });
+                }
+
+                set({ myTeamData: data });
+            }
+        });
+
+        console.log(`[Team] Listening to my team: ${myTeam}`);
+    },
+
+    stopListeningToMyTeam: () => {
+        const { myTeam, gameSessionId } = get();
+
+        if (!myTeam || !gameSessionId) return;
+
+        const mode = myTeam.startsWith('Admin') ? 'admin' : 'user';
+        const myTeamRef = ref(database, `games/${mode}/${gameSessionId}/teams/${myTeam}`);
+        off(myTeamRef);
+
+        console.log(`[Team] Stopped listening to my team: ${myTeam}`);
+    },
+
     listenToOpponent: () => {
         const { opponentTeam, gameSessionId, myTeam } = get();
 
@@ -170,6 +307,9 @@ export const useTeamStore = create<TeamState>((set, get) => ({
             console.warn('[Team] Cannot listen: No opponent or session');
             return;
         }
+
+        // Start listening to my own team for incoming attacks
+        get().listenToMyTeam();
 
         const mode = myTeam?.startsWith('Admin') ? 'admin' : 'user';
         const opponentRef = ref(database, `games/${mode}/${gameSessionId}/teams/${opponentTeam}`);
@@ -206,7 +346,7 @@ export const useTeamStore = create<TeamState>((set, get) => ({
             }
         });
 
-        console.log(`[Team] Listening to ${opponentTeam}`);
+        console.log(`[Team] Listening to opponent: ${opponentTeam}`);
     },
 
     stopListeningToOpponent: () => {
@@ -214,11 +354,14 @@ export const useTeamStore = create<TeamState>((set, get) => ({
 
         if (!opponentTeam || !gameSessionId) return;
 
+        // Stop listening to both opponent and my team
+        get().stopListeningToMyTeam();
+
         const mode = myTeam?.startsWith('Admin') ? 'admin' : 'user';
         const opponentRef = ref(database, `games/${mode}/${gameSessionId}/teams/${opponentTeam}`);
         off(opponentRef);
 
-        console.log(`[Team] Stopped listening to ${opponentTeam}`);
+        console.log(`[Team] Stopped listening to opponent: ${opponentTeam}`);
     },
 
     addNotification: (notification) => {
@@ -246,6 +389,8 @@ export const useTeamStore = create<TeamState>((set, get) => ({
 
     resetTeamStore: () => {
         get().stopListeningToOpponent();
+        get().stopListeningToMyTeam();
+
         set({
             myTeam: null,
             opponentTeam: null,
@@ -256,9 +401,11 @@ export const useTeamStore = create<TeamState>((set, get) => ({
             opponentTeamData: null,
             notifications: []
         });
+
         localStorage.removeItem('selectedTeam');
         localStorage.removeItem('playerName');
         localStorage.removeItem('gameSessionId');
+
         console.log('[Team] Store reset');
     }
 }));

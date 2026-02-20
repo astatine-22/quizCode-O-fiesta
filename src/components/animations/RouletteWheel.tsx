@@ -39,7 +39,7 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({ result, onComplete
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        segments.forEach((segment, i) => {
+        segments.forEach((segment) => {
             const startAngle = (segment.angle * Math.PI) / 180;
             const endAngle = ((segment.angle + 120) * Math.PI) / 180;
 

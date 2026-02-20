@@ -44,7 +44,6 @@ function App() {
     handleGambleAction,
     nextQuestion,
     incrementCombo,
-    isDemoMode,
   } = useGameStore();
 
   const { initializeAchievements, checkAndUnlock } = useAchievementStore();
@@ -122,16 +121,6 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [restartGame, setGamePhase]);
 
-  const handleStartGame = () => {
-    restartGame();
-
-    if (isDemoMode) {
-      setGameQuestions(shuffleQuestions(adminQuestions));
-    } else {
-      setGameQuestions(shuffleQuestions(userQuestions));
-    }
-    setGamePhase('playing');
-  };
 
   const handleAnswerSelected = (answerIndex: number, isCorrect: boolean, answerTime: number) => {
     const currentQuestion = gameQuestions[questionIndex];
@@ -172,11 +161,23 @@ function App() {
         earnPowerUp('freeze');
         earnPowerUp('scramble');
         earnPowerUp('lifeDrain');
+
+        // Sync earned power-ups to Firebase so the opponent player can see
+        if (isTeamMode && myTeam) {
+          const { inventory } = usePowerUpStore.getState();
+          syncMyTeamData({ powerUps: inventory });
+        }
       }
 
       // Random life drain drop
       if (Math.random() < GAME_CONFIG.POWER_UP_DROP_RATES.LIFE_DRAIN_CHANCE) {
         earnPowerUp('lifeDrain');
+
+        // Sync earned power-up to Firebase
+        if (isTeamMode && myTeam) {
+          const { inventory } = usePowerUpStore.getState();
+          syncMyTeamData({ powerUps: inventory });
+        }
       }
 
       // Store points for gamble phase
@@ -312,7 +313,6 @@ function App() {
         <AnimatePresence mode="wait">
           {gamePhase === 'menu' && (
             <MainMenuView
-              onStartGame={handleStartGame}
               onEnableTeamMode={handleEnableTeamMode}
             />
           )}

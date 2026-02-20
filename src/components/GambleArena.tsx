@@ -48,7 +48,6 @@ const sideVariants: Variants = {
 
 export const GambleArena: React.FC<GambleArenaProps> = ({
     currentPoints,
-    streakLevel,
     onBank,
     onGamble
 }) => {

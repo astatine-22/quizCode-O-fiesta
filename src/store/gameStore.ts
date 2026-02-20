@@ -365,8 +365,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     handleBankAction: () => {
-        const state = get();
-
         // Just move to next question
         // Caller will check if there are more questions
         return { shouldContinue: true };
