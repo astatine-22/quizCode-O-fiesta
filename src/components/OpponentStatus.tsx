@@ -3,7 +3,7 @@ import { useTeamStore } from '../store/teamStore';
 import './OpponentStatus.css';
 
 export const OpponentStatus: React.FC = () => {
-    const { opponentTeam, opponentTeamData, myTeamData } = useTeamStore();
+    const { opponentTeam, opponentTeamData } = useTeamStore();
 
     if (!opponentTeam || !opponentTeamData) return null;
 
@@ -15,12 +15,6 @@ export const OpponentStatus: React.FC = () => {
         return '#888';
     };
 
-    const scoreDiff = (myTeamData?.score || 0) - opponentTeamData.score;
-    const isAhead = scoreDiff > 0;
-    const isBehind = scoreDiff < 0;
-    const isClose = Math.abs(scoreDiff) < 200;
-
-    const statusColor = isAhead ? '#00ff88' : isBehind ? '#FF4500' : '#FFD700';
     const isOnStreak = opponentTeamData.streak >= 3;
 
     return (
@@ -38,10 +32,6 @@ export const OpponentStatus: React.FC = () => {
             </div>
 
             <div className="opponent-stats">
-                <div className="stat-row">
-                    <span className="stat-label">Score:</span>
-                    <span className="stat-value">{opponentTeamData.score.toLocaleString()}</span>
-                </div>
 
                 <div className="stat-row">
                     <span className="stat-label">Streak:</span>
@@ -58,12 +48,6 @@ export const OpponentStatus: React.FC = () => {
                 </div>
             </div>
 
-            <div className="score-comparison" style={{ color: statusColor }}>
-                {isAhead && `+${scoreDiff} ahead`}
-                {isBehind && `${Math.abs(scoreDiff)} behind`}
-                {!isAhead && !isBehind && 'TIED!'}
-                {isClose && scoreDiff !== 0 && ' 🔥'}
-            </div>
 
             {isOnStreak && (
                 <motion.div
