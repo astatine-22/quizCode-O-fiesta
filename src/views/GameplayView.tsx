@@ -2,8 +2,6 @@ import { AnimatePresence } from 'framer-motion';
 import { QuestionCard } from '../components/QuestionCard';
 import { ScoreCounter } from '../components/ScoreCounter';
 import { ComboDisplay } from '../components/ComboDisplay';
-import { PowerUpInventory } from '../components/PowerUpInventory';
-import { OpponentStatus } from '../components/OpponentStatus';
 import { LiveNotifications } from '../components/LiveNotifications';
 import { useGameStore } from '../store/gameStore';
 import { useTeamStore } from '../store/teamStore';
@@ -23,10 +21,7 @@ export function GameplayView({ currentQuestion, questionIndex, onAnswerSelected 
         <>
             {/* Team Mode UI Elements */}
             {isTeamMode && (
-                <>
-                    <OpponentStatus />
-                    <LiveNotifications />
-                </>
+                <LiveNotifications />
             )}
 
             {/* Score Counter */}
@@ -34,9 +29,6 @@ export function GameplayView({ currentQuestion, questionIndex, onAnswerSelected 
 
             {/* Combo Display */}
             <ComboDisplay />
-
-            {/* Power Up Inventory */}
-            <PowerUpInventory />
 
             {/* Question Card */}
             <div className="game-container">

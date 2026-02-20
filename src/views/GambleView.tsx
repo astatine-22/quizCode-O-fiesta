@@ -1,7 +1,6 @@
 import { GambleArena } from '../components/GambleArena';
 import { ScoreCounter } from '../components/ScoreCounter';
 import { ComboDisplay } from '../components/ComboDisplay';
-import { PowerUpInventory } from '../components/PowerUpInventory';
 import { useGameStore } from '../store/gameStore';
 import type { GambleType } from '../config/gameConfig';
 
@@ -21,9 +20,6 @@ export function GambleView({ currentPoints, onBank, onGamble }: GambleViewProps)
 
             {/* Combo Display */}
             <ComboDisplay />
-
-            {/* Power Up Inventory */}
-            <PowerUpInventory />
 
             {/* Gamble Arena */}
             <GambleArena

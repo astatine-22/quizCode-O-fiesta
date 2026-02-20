@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { FireSystem } from './components/FireSystem';
-import { PowerUpInventory } from './components/PowerUpInventory';
 import { ActiveEffects } from './components/ActiveEffects';
 import { AttackAnimation } from './components/AttackAnimation';
 import { DuelChallenge } from './components/DuelChallenge';
@@ -295,10 +294,6 @@ function App() {
       {/* Fire System - Always visible */}
       <FireSystem />
 
-      {/* Power Up Inventory */}
-      {(gamePhase === 'playing' || gamePhase === 'gamble') && (
-        <PowerUpInventory />
-      )}
 
       {/* Achievement Toast */}
       <Suspense fallback={null}>
