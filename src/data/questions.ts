@@ -7,154 +7,147 @@ export interface Question {
     category: string;
 }
 
-// Demo/Admin Questions (Original Set)
+// Demo/Admin Questions (Simple Demo Set)
 export const adminQuestions: Question[] = [
-    // General Knowledge
     {
         id: 1,
-        text: "What is the tallest mountain in the world?",
-        answers: ["K2", "Mount Everest", "Kangchenjunga", "Lhotse"],
+        text: "What colour is the sky on a clear day?",
+        answers: ["Green", "Blue", "Red", "Yellow"],
         correctIndex: 1,
-        category: "General Knowledge"
+        category: "Demo"
     },
     {
         id: 2,
-        text: "Which planet is closest to the Sun?",
-        answers: ["Venus", "Mars", "Mercury", "Earth"],
+        text: "How many days are in a week?",
+        answers: ["5", "6", "7", "8"],
         correctIndex: 2,
-        category: "General Knowledge"
+        category: "Demo"
     },
     {
         id: 3,
-        text: "What is the largest organ in the human body?",
-        answers: ["Heart", "Brain", "Liver", "Skin"],
-        correctIndex: 3,
-        category: "General Knowledge"
+        text: "What is 2 + 2?",
+        answers: ["3", "4", "5", "6"],
+        correctIndex: 1,
+        category: "Demo"
     },
     {
         id: 4,
-        text: "How many bones are in the adult human body?",
-        answers: ["186", "206", "226", "246"],
+        text: "Which animal is known as man's best friend?",
+        answers: ["Cat", "Dog", "Bird", "Fish"],
         correctIndex: 1,
-        category: "General Knowledge"
+        category: "Demo"
     },
     {
         id: 5,
-        text: "What is the speed of light in vacuum?",
-        answers: ["299,792 km/s", "199,792 km/s", "399,792 km/s", "99,792 km/s"],
-        correctIndex: 0,
-        category: "General Knowledge"
+        text: "Which planet do we live on?",
+        answers: ["Mars", "Venus", "Earth", "Jupiter"],
+        correctIndex: 2,
+        category: "Demo"
     },
-
-    // Current Affairs (2025-2026)
     {
         id: 6,
-        text: "Which country hosted the 2024 Summer Olympics?",
-        answers: ["Japan", "France", "USA", "Australia"],
-        correctIndex: 1,
-        category: "Current Affairs"
+        text: "What shape has 3 sides?",
+        answers: ["Square", "Circle", "Triangle", "Rectangle"],
+        correctIndex: 2,
+        category: "Demo"
     },
     {
         id: 7,
-        text: "What is the name of the AI chatbot released by OpenAI in 2022?",
-        answers: ["GPT-3", "ChatGPT", "DALL-E", "Codex"],
+        text: "What do bees produce?",
+        answers: ["Milk", "Honey", "Silk", "Sugar"],
         correctIndex: 1,
-        category: "Current Affairs"
+        category: "Demo"
     },
     {
         id: 8,
-        text: "Which company became the first to reach a $3 trillion market cap in 2024?",
-        answers: ["Microsoft", "Google", "Apple", "Amazon"],
+        text: "How many hours are in one day?",
+        answers: ["12", "20", "24", "48"],
         correctIndex: 2,
-        category: "Current Affairs"
+        category: "Demo"
     },
     {
         id: 9,
-        text: "What is the name of NASA's mission to return humans to the Moon?",
-        answers: ["Apollo", "Artemis", "Orion", "Gateway"],
-        correctIndex: 1,
-        category: "Current Affairs"
+        text: "What is the capital city of France?",
+        answers: ["London", "Berlin", "Rome", "Paris"],
+        correctIndex: 3,
+        category: "Demo"
     },
     {
         id: 10,
-        text: "Which social media platform was rebranded to 'X' in 2023?",
-        answers: ["Facebook", "Instagram", "Twitter", "TikTok"],
-        correctIndex: 2,
-        category: "Current Affairs"
+        text: "Which fruit is red and grows on trees?",
+        answers: ["Banana", "Apple", "Mango", "Grapes"],
+        correctIndex: 1,
+        category: "Demo"
     },
-
-    // Programming
     {
         id: 11,
-        text: "What does 'HTML' stand for?",
-        answers: ["Hyper Text Markup Language", "High Tech Modern Language", "Home Tool Markup Language", "Hyperlinks and Text Markup Language"],
-        correctIndex: 0,
-        category: "Programming"
+        text: "What do we use to write on a whiteboard?",
+        answers: ["Pencil", "Pen", "Marker", "Chalk"],
+        correctIndex: 2,
+        category: "Demo"
     },
     {
         id: 12,
-        text: "Which programming language is known as the 'language of the web'?",
-        answers: ["Python", "Java", "JavaScript", "C++"],
+        text: "What is 10 x 10?",
+        answers: ["10", "20", "100", "1000"],
         correctIndex: 2,
-        category: "Programming"
+        category: "Demo"
     },
     {
         id: 13,
-        text: "What does 'API' stand for in programming?",
-        answers: ["Application Programming Interface", "Advanced Programming Integration", "Automated Program Interaction", "Application Process Integration"],
-        correctIndex: 0,
-        category: "Programming"
+        text: "Which of these is a primary color?",
+        answers: ["Orange", "Green", "Purple", "Blue"],
+        correctIndex: 3,
+        category: "Demo"
     },
     {
         id: 14,
-        text: "Which of these is NOT a programming paradigm?",
-        answers: ["Object-Oriented", "Functional", "Procedural", "Sequential"],
-        correctIndex: 3,
-        category: "Programming"
+        text: "What language do people speak in the UK?",
+        answers: ["French", "Spanish", "English", "German"],
+        correctIndex: 2,
+        category: "Demo"
     },
     {
         id: 15,
-        text: "What is the time complexity of binary search?",
-        answers: ["O(n)", "O(log n)", "O(n²)", "O(1)"],
-        correctIndex: 1,
-        category: "Programming"
+        text: "Which of these animals can fly?",
+        answers: ["Lion", "Shark", "Eagle", "Elephant"],
+        correctIndex: 2,
+        category: "Demo"
     },
-
-    // Computer / Technology
     {
         id: 16,
-        text: "What does 'CPU' stand for?",
-        answers: ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Core Processing Unit"],
-        correctIndex: 0,
-        category: "Computer/Technology"
+        text: "How many legs does a spider have?",
+        answers: ["4", "6", "8", "10"],
+        correctIndex: 2,
+        category: "Demo"
     },
     {
         id: 17,
-        text: "Which company developed the Android operating system?",
-        answers: ["Apple", "Microsoft", "Google", "Samsung"],
+        text: "What is the opposite of 'hot'?",
+        answers: ["Warm", "Cool", "Cold", "Icy"],
         correctIndex: 2,
-        category: "Computer/Technology"
+        category: "Demo"
     },
     {
         id: 18,
-        text: "What does 'RAM' stand for?",
-        answers: ["Random Access Memory", "Read Access Memory", "Rapid Application Memory", "Remote Access Module"],
-        correctIndex: 0,
-        category: "Computer/Technology"
+        text: "Which season comes after winter?",
+        answers: ["Autumn", "Summer", "Spring", "Monsoon"],
+        correctIndex: 2,
+        category: "Demo"
     },
     {
         id: 19,
-        text: "Which protocol is used to transfer web pages?",
-        answers: ["FTP", "SMTP", "HTTP", "SSH"],
-        correctIndex: 2,
-        category: "Computer/Technology"
+        text: "What do plants need to grow?",
+        answers: ["Milk & Darkness", "Water & Sunlight", "Sand & Wind", "Ice & Shade"],
+        correctIndex: 1,
+        category: "Demo"
     },
     {
         id: 20,
-        text: "What is the binary representation of the decimal number 10?",
-        answers: ["1010", "1100", "1001", "1110"],
-        correctIndex: 0,
-        category: "Computer/Technology"
+        text: "How many letters are in the English alphabet?",
+        answers: ["24", "25", "26", "27"],
+        correctIndex: 2,
+        category: "Demo"
     }
 ];
 
