@@ -182,7 +182,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         return {
             score: 0,
             streak: 0,
-            lives: 5,
+            lives: GAME_CONFIG.INITIAL_LIVES,
             questionIndex: 0,
             gamePhase: 'playing',
             sessionHistory: [],

@@ -5,7 +5,7 @@
 
 export const GAME_CONFIG = {
     // Player Configuration
-    INITIAL_LIVES: 5,
+    INITIAL_LIVES: 3,
     INITIAL_SCORE: 0,
     INITIAL_STREAK: 0,
 
